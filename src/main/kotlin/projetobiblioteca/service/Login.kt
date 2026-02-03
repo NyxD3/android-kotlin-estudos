@@ -7,7 +7,7 @@ class Login {
 
     val biblioteca = Menu()
 
-    fun autenticar(email: String, senhaHash: String): Boolean {
+    fun autenticar(email: String, senha: String): Boolean {
 
         val conn = Conexao.conectar()
 
@@ -19,7 +19,7 @@ class Login {
 
         val stmt = conn.prepareStatement(sql)
         stmt.setString(1, email)
-        stmt.setString(2, senhaHash)
+        stmt.setString(2, senha)
 
         val rs = stmt.executeQuery()
 

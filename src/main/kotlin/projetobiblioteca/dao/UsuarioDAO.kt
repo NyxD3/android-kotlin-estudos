@@ -18,10 +18,11 @@ class UsuarioDAO {
 
             val usuario = Usuario(
                 rs.getInt("id_usuario"),
-                rs.getString("nome"),
-                rs.getString("telefone"),
-                rs.getString("endereco")
+                rs.getString("nome") ?: "",
+                rs.getString("telefone") ?: "",
+                rs.getString("endereco") ?: ""
             )
+
 
             lista.add(usuario)
         }
@@ -29,13 +30,13 @@ class UsuarioDAO {
         con.close()
         return lista
     }
-//-------------------------------------------------------------
+//========================================================
 
 
     fun cadastrarUsuario() {
 
         println("Nome:")
-        val nome = readLine()!!
+        val nome = readLine()?.takeIf { it.isNotBlank() } ?: return
 
         println("Telefone:")
         val telefone = readLine()!!
@@ -64,35 +65,59 @@ class UsuarioDAO {
         conn.close()
 
     }
-//-------------------------------------------------
+//========================================================
 
     fun apagarUsuario() {
 
-        listarUsuario()
+        val usuarios = listarUsuario()
+
+        for(u in usuarios){
+            println("ID:${u.idUsuario} - ${u.nome}")
+        }
 
         val con = Conexao.conectar()
 
+        print("Confirmar exclusão? (S/N): ")
+        if(readLine()?.uppercase() != "S"){
+            con.close()
+            return
+        }
+
         print("ID: ")
-        val id = readLine()!!.toInt()
+        val id = readLine()?.toIntOrNull()
 
-        val check = con.prepareStatement("SELECT * FROM usuarios WHERE id_usuario=?")
-        check.setInt(1, id)
+        if(id == null){
+            println("ID inválido.")
+            con.close()
+            return
+        }
 
-        if (!check.executeQuery().next()) {
-            println("Usuário não encontrado.")
+        //Verifica se tem emprestimo
+        val checkEmprestimo = con.prepareStatement("""
+        SELECT 1 FROM emprestimo 
+        WHERE id_usuario=? AND data_devolucao IS NULL
+    """)
+
+        checkEmprestimo.setInt(1,id)
+
+        if(checkEmprestimo.executeQuery().next()){
+            println("Usuário possui empréstimos ativos.")
             con.close()
             return
         }
 
         val stmt = con.prepareStatement("DELETE FROM usuarios WHERE id_usuario=?")
-        stmt.setInt(1, id)
+        stmt.setInt(1,id)
 
-        stmt.executeUpdate()
+        if(stmt.executeUpdate()>0)
+            println("Usuário removido!")
+        else
+            println("Usuário não encontrado.")
 
-        println("Removido!")
-
+        con.close()
     }
-    //---------------------------------------------------------
+
+    //========================================================
 
     fun editarUsuario() {
 
@@ -102,6 +127,15 @@ class UsuarioDAO {
 
         print("ID: ")
         val id = readLine()!!.toInt()
+
+        val check = con.prepareStatement("SELECT 1 FROM usuarios WHERE id_usuario=?")
+        check.setInt(1,id)
+
+        if(!check.executeQuery().next()){
+            println("Usuário não encontrado.")
+            con.close()
+            return
+        }
 
         print("Novo nome: ")
         val nome = readLine()!!
@@ -132,7 +166,7 @@ class UsuarioDAO {
         con.close()
     }
 
-//------------------------------------------------------------
+//========================================================
 
     fun menuUsuario() {
 

@@ -1,10 +1,11 @@
 package projetobiblioteca.dao
 
 import projetobiblioteca.model.Emprestimo
+import java.time.LocalDate
 
 class EmprestimoDAO {
 
-    //================ LISTAR ==================
+    // ========================================================
 
     fun listarEmprestimosAtivos(): List<Emprestimo> {
 
@@ -16,9 +17,6 @@ class EmprestimoDAO {
             WHERE data_devolucao IS NULL
         """).executeQuery()
 
-
-
-
         while (rs.next()) {
 
             val emp = Emprestimo(
@@ -26,7 +24,7 @@ class EmprestimoDAO {
                 rs.getInt("id_livro"),
                 rs.getInt("id_usuario"),
                 rs.getDate("data_emprestimo").toLocalDate(),
-                rs.getDate("data_devolucao").toLocalDate()
+                rs.getDate("data_devolucao")?.toLocalDate()
             )
 
             lista.add(emp)
@@ -36,34 +34,69 @@ class EmprestimoDAO {
         return lista
     }
 
-    //================ TOTAL ==================
+    // ========================================================
 
     fun totalEmprestados(): Int {
 
         val con = Conexao.conectar()
 
         val rs = con.prepareStatement("""
-            SELECT COUNT(*) AS total FROM emprestimo WHERE data_devolucao IS NULL
+            SELECT COUNT(*) FROM emprestimo WHERE data_devolucao IS NULL
         """).executeQuery()
 
         rs.next()
-        val total = rs.getInt("total")
+        val total = rs.getInt(1)
 
         con.close()
         return total
     }
 
-    //================ NOVO ==================
+    // ========================================================
 
     fun novoEmprestimo() {
 
         val con = Conexao.conectar()
 
-        print("ID livro: ")
-        val livro = readLine()!!.toInt()
+        println("\n=== LIVROS DISPONÍVEIS ===")
 
-        print("ID usuário: ")
-        val usuario = readLine()!!.toInt()
+
+        val livros = LivroDAO().listarLivros()
+
+        for(l in livros){
+            if(!l.emprestado){
+                println("ID:${l.idLivro} - ${l.titulo}")
+            }
+        }
+
+        println("0 - Cancelar")
+
+        print("\nID do livro: ")
+        val livro = readLine()?.toIntOrNull()
+
+        if(livro == null || livro == 0){
+            println("Operação cancelada.")
+            con.close()
+            return
+        }
+
+        println("\n=== USUÁRIOS ===")
+
+        val usuarios = UsuarioDAO().listarUsuario()
+
+        for(u in usuarios){
+            println("ID:${u.idUsuario} - ${u.nome}")
+        }
+
+        println("0 - Cancelar")
+
+        print("\nID do usuário: ")
+        val usuario = readLine()?.toIntOrNull()
+
+        if(usuario == null || usuario == 0){
+            println("Operação cancelada.")
+            con.close()
+            return
+        }
 
         val check = con.prepareStatement("""
             SELECT * FROM emprestimo
@@ -88,19 +121,35 @@ class EmprestimoDAO {
 
         stmt.executeUpdate()
 
-        println("Empréstimo registrado!")
+        println("Empréstimo registrado com sucesso!")
 
         con.close()
     }
 
-    //================ DEVOLVER ==================
+    // ========================================================
 
     fun devolverLivro() {
 
         val con = Conexao.conectar()
 
-        print("ID empréstimo: ")
-        val id = readLine()!!.toInt()
+        println("\n=== EMPRÉSTIMOS ATIVOS ===")
+
+        val lista = listarEmprestimosAtivos()
+
+        for(e in lista){
+            println("ID:${e.id} Livro:${e.idLivro} Usuário:${e.idUsuario}")
+        }
+
+        println("0 - Cancelar")
+
+        print("\nID empréstimo: ")
+        val id = readLine()?.toIntOrNull()
+
+        if(id == null || id == 0){
+            println("Cancelado.")
+            con.close()
+            return
+        }
 
         val stmt = con.prepareStatement("""
             UPDATE emprestimo
@@ -118,7 +167,7 @@ class EmprestimoDAO {
         con.close()
     }
 
-    //================ MENU ==================
+    // ========================================================
 
     fun menuEmprestimo() {
 
@@ -135,16 +184,14 @@ class EmprestimoDAO {
 """)
 
             print("Escolha: ")
-            op = readLine()!!.toInt()
-
-
+            op = readLine()?.toIntOrNull() ?: -1
 
             when(op){
 
                 1 -> {
                     val lista = listarEmprestimosAtivos()
 
-                    println("Total emprestados: ${totalEmprestados()}")
+                    println("\nTotal emprestados: ${totalEmprestados()}")
 
                     for(e in lista){
                         println("""
@@ -160,7 +207,7 @@ Data:${e.dataEmprestimo}
                 2 -> novoEmprestimo()
                 3 -> devolverLivro()
                 0 -> println("Voltando...")
-                else -> println("Inválido")
+                else -> println("Opção inválida")
             }
 
         }while(op!=0)

@@ -25,10 +25,12 @@ fun main() {
 
 
     print("Email: ")
-    val email = readLine()!!
+    val email = readLine()?.trim().orEmpty()
+
 
     print("Senha: ")
-    val senha = readLine()!!
+    val senha = readLine()?.trim().orEmpty()
+
 
 
     if (login.autenticar(email, senha)) {

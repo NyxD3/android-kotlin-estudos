@@ -4,7 +4,7 @@ import projetobiblioteca.model.Funcionario
 
 class FuncionarioDAO {
 
-    //================ LISTAR ==================
+    //========================================================
 
     fun listarFuncionarios(): List<Funcionario> {
 
@@ -29,8 +29,38 @@ class FuncionarioDAO {
         return lista
     }
 
-    //================ EDITAR ==================
+    //========================================================
+    fun cadastrarFuncionario() {
 
+        print("Nome: ")
+        val nome = readLine()!!
+
+        print("Email: ")
+        val email = readLine()!!
+
+        print("Senha: ")
+        val senha = readLine()!!
+
+        val con = Conexao.conectar()
+
+        val stmt = con.prepareStatement("""
+        INSERT INTO funcionarios(nome,email,senha_hash)
+        VALUES(?,?,?)
+    """)
+
+        stmt.setString(1,nome)
+        stmt.setString(2,email)
+        stmt.setString(3,senha)
+
+        stmt.executeUpdate()
+
+        println("Funcionário cadastrado!")
+
+        con.close()
+    }
+
+
+    //========================================================
     fun editarFuncionario() {
 
         val funcionarios = listarFuncionarios()
@@ -44,10 +74,21 @@ Email:${f.email}
 """)
         }
 
+
+
         val con = Conexao.conectar()
 
         print("ID: ")
         val id = readLine()!!.toInt()
+
+        val check = con.prepareStatement("SELECT 1 FROM funcionarios WHERE id_funcionario=?")
+        check.setInt(1,id)
+
+        if(!check.executeQuery().next()){
+            println("Funcionário não encontrado.")
+            con.close()
+            return
+        }
 
         print("Novo nome: ")
         val nome = readLine()!!
@@ -58,11 +99,13 @@ Email:${f.email}
         print("Nova senha: ")
         val senha = readLine()!!
 
+
         val stmt = con.prepareStatement("""
             UPDATE funcionarios
             SET nome=?, email=?, senha_hash=?
             WHERE id_funcionario=?
         """)
+
 
         stmt.setString(1,nome)
         stmt.setString(2,email)
@@ -77,7 +120,7 @@ Email:${f.email}
         con.close()
     }
 
-    //================ APAGAR ==================
+    //========================================================
 
     fun apagarFuncionario() {
 
@@ -107,7 +150,7 @@ Nome:${f.nome}
         con.close()
     }
 
-    //================ MENU ==================
+    //========================================================
 
     fun menuFuncionario() {
 
@@ -119,7 +162,8 @@ Nome:${f.nome}
 ====== FUNCIONÁRIOS ======
 1 - Listar
 2 - Editar
-3 - Apagar
+3 - Cadastrar Funcionário
+4 - Apagar
 0 - Voltar
 """)
 
@@ -138,8 +182,11 @@ Email:${f.email}
 """)
                     }
                 }
+
                 2 -> editarFuncionario()
-                3 -> apagarFuncionario()
+                3 -> cadastrarFuncionario()
+                4 -> apagarFuncionario()
+
                 0 -> println("Voltando...")
                 else -> println("Inválido")
             }

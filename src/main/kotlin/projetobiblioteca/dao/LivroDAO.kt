@@ -4,7 +4,7 @@ import projetobiblioteca.model.Livros
 
 class LivroDAO {
 
-    // ================= LISTAR =================
+    // ========================================================
     fun listarLivros(): List<Livros> {
 
         val lista = mutableListOf<Livros>()
@@ -26,7 +26,7 @@ class LivroDAO {
                 rs.getInt("id_livro"),
                 rs.getString("titulo"),
                 rs.getString("autor"),
-                rs.getInt("ano_publicacao"),
+                rs.getString("ano_publicacao").toInt(),
                 rs.getString("isbn"),
                 rs.getString("estilo"),
                 emprestado
@@ -40,7 +40,7 @@ class LivroDAO {
     }
 
 
-    // ================= CADASTRAR =================
+    // ========================================================
     fun cadastrarLivro() {
 
         print("Título: ")
@@ -50,10 +50,10 @@ class LivroDAO {
         val autor = readLine()!!
 
         print("Ano: ")
-        val ano = readLine()!!
+        val ano = readLine()!!.toInt()
 
         print("ISBN: ")
-        val isbn = readLine()!!.toInt()
+        val isbn = readLine()!!
 
         print("Gênero: ")
         val genero = readLine()!!
@@ -67,8 +67,8 @@ class LivroDAO {
 
         stmt.setString(1,titulo)
         stmt.setString(2,autor)
-        stmt.setString(3,ano)
-        stmt.setInt(4,isbn)
+        stmt.setInt(3,ano)
+        stmt.setString(4,isbn)
         stmt.setString(5,genero)
 
         stmt.executeUpdate()
@@ -78,7 +78,7 @@ class LivroDAO {
         con.close()
     }
 
-    // ================= BUSCAR POR GÊNERO =================
+    //========================================================
     fun buscarPorGenero() {
 
         print("Digite gênero: ")
@@ -99,7 +99,7 @@ class LivroDAO {
         con.close()
     }
 
-    // ================= TOTAL =================
+    //========================================================
     fun totalLivros(): Int {
 
         val con = Conexao.conectar()
@@ -112,7 +112,7 @@ class LivroDAO {
         return total
     }
 
-    // ================= TOTAL POR GÊNERO =================
+    // ========================================================
     fun totalPorGenero() {
 
         val con = Conexao.conectar()
@@ -127,8 +127,54 @@ class LivroDAO {
 
         con.close()
     }
+    //========================================================
 
-    // ================= MENU =================
+    fun apagarLivro(){
+
+        val livros = listarLivros()
+
+        for(l in livros){
+            println("ID:${l.idLivro} - ${l.titulo}")
+        }
+
+        val con = Conexao.conectar()
+
+        print("ID do livro: ")
+        val id = readLine()?.toIntOrNull()
+
+        if(id == null){
+            println("ID inválido")
+            con.close()
+            return
+        }
+
+        // verifica empréstimo ativo
+        val check = con.prepareStatement("""
+        SELECT 1 FROM emprestimo
+        WHERE id_livro=? AND data_devolucao IS NULL
+    """)
+
+        check.setInt(1,id)
+
+        if(check.executeQuery().next()){
+            println("Livro está emprestado.")
+            con.close()
+            return
+        }
+
+        val stmt = con.prepareStatement("DELETE FROM livros WHERE id_livro=?")
+        stmt.setInt(1,id)
+
+        if(stmt.executeUpdate()>0)
+            println("Livro removido!")
+        else
+            println("Livro não encontrado.")
+
+        con.close()
+    }
+
+
+    //========================================================
     fun menuLivro() {
 
         var op:Int
@@ -136,10 +182,11 @@ class LivroDAO {
 
             println("""
 ==== LIVROS ====
-1 Listar
-2 Cadastrar
-3 Buscar gênero
-0 Voltar
+1 - Listar
+2 - Cadastrar
+3 - Buscar gênero
+4 - Apagar Livro
+0 - Voltar
 """)
 
             op = readLine()!!.toInt()
@@ -170,6 +217,7 @@ Status: $status
 
                 2 -> cadastrarLivro()
                 3 -> buscarPorGenero()
+                4 -> apagarLivro()
             }
 
         }while(op!=0)
